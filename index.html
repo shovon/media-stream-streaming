@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Canvas</title>
+    <style>
+      #video-box {
+        position: relative;
+      }
+
+      #video-box video {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="video-box"></div>
+    <!-- <video width="800" height="600" id="output" preload="auto"></video> -->
+    <script>
+      (async function () {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+
+        function record() {
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: "video/webm; codecs=vp9",
+          });
+          mediaRecorder.ondataavailable = function (event) {
+            if (event.data.size > 0) {
+              event.data.arrayBuffer().then((buf) => {
+                console.log(new Uint8Array(buf).length);
+              });
+              const blob = new Blob([event.data], {
+                type: "video/webm",
+              });
+              const url = URL.createObjectURL(blob);
+              createVideo(url);
+            }
+          };
+          mediaRecorder.start();
+          setTimeout(() => {
+            mediaRecorder.stop();
+            record();
+          }, 200);
+        }
+        record();
+
+        let previousVideo;
+        function createVideo(url) {
+          const container = document.getElementById("video-box");
+          const video = document.createElement("video");
+          video.onloadeddata = () => {
+            if (previousVideo) {
+              previousVideo.parentElement.removeChild(previousVideo);
+            }
+            previousVideo = video;
+          };
+          video.autoplay = true;
+          video.src = url;
+          video.play();
+          container.appendChild(video);
+        }
+      })().catch(console.error);
+    </script>
+  </body>
+</html>
